@@ -3,6 +3,8 @@ package limitd
 import (
 	"fmt"
 	"github.com/limitd/go-client/fixture"
+	"github.com/limitd/go-client/messages"
+	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
 )
@@ -26,10 +28,15 @@ func TestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 
-func TestPut(t *testing.T) {
+func TestTake(t *testing.T) {
 	client, err := Dial(":9231")
 	if err != nil {
 		panic(err)
 	}
-	client.Take("ip", "127.0.0.1", 50)
+
+	response, takeResponse, err := client.Take("ip", "127.0.0.1", 1)
+
+	assert.Equal(t, limitd.Response_TAKE, response.GetType())
+	assert.Equal(t, int32(9), takeResponse.GetRemaining())
+	assert.Equal(t, true, takeResponse.GetConformant())
 }
