@@ -8,9 +8,13 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	//init test server
 	server := fixture.Start()
 
+	//run every test
 	exitCode := m.Run()
+
+	//stop test server
 	fmt.Println("teardown")
 	err := server.Process.Kill()
 	server.Wait()
@@ -18,6 +22,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
+	//exit
 	os.Exit(exitCode)
 }
 
