@@ -2,32 +2,37 @@
 package limitd
 
 import (
+	"github.com/dchest/uniuri"
 	"github.com/golang/protobuf/proto"
-	"github.com/limitd/go-client/messages/Request"
+	"github.com/limitd/go-client/messages"
 	"log"
+	"net"
 )
 
-// Reverse returns its argument string reversed rune-wise left to right.
-func Reverse(s string) string {
-	test := &limitd.Request{
-		Id:     proto.String("hello"),
+//Client defines the limitd client
+type Client struct {
+	Conn *net.Conn
+}
+
+func (c *Client) take(t string, k string, c int32) *limitd.Response {
+	request := &limitd.Request{
+		Id:     proto.String(uniuri.New()),
 		Method: limitd.Request_TAKE.Enum(),
-		Type:   proto.String("ip"),
-		Key:    proto.String("127.0.0.1"),
+		Type:   proto.String(t),
+		Key:    proto.String(k),
 		Count:  proto.Int32(12),
 	}
+	// goprotobuf.EncodeVarint followed by proto.Marshal
+	data, _ := proto.Marshal(request)
+	data = append(proto.EncodeVarint(uint64(len(data))), data...)
+	client.Write(data)
+}
 
-	data, err := proto.Marshal(test)
+// Dial connect to a limitd server
+func Dial(address string) (client *Client, err error) {
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	conn, err := net.Dial("tcp", address)
 
-	log.Fatal(data)
-
-	r := []rune(s)
-	for i, j := 0, len(r)-1; i < len(r)/2; i, j = i+1, j-1 {
-		r[i], r[j] = r[j], r[i]
-	}
-	return string(r)
+	client = new(LimitdClient)
+	client.Conn = conn
 }
