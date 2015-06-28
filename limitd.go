@@ -5,16 +5,16 @@ import (
 	"github.com/dchest/uniuri"
 	"github.com/golang/protobuf/proto"
 	"github.com/limitd/go-client/messages"
-	"log"
 	"net"
 )
 
 //Client defines the limitd client
 type Client struct {
-	Conn *net.Conn
+	Conn net.Conn
 }
 
-func (c *Client) take(t string, k string, c int32) *limitd.Response {
+// Take n tokens from bucket t, key k
+func (client *Client) Take(t string, k string, n int32) {
 	request := &limitd.Request{
 		Id:     proto.String(uniuri.New()),
 		Method: limitd.Request_TAKE.Enum(),
@@ -25,7 +25,8 @@ func (c *Client) take(t string, k string, c int32) *limitd.Response {
 	// goprotobuf.EncodeVarint followed by proto.Marshal
 	data, _ := proto.Marshal(request)
 	data = append(proto.EncodeVarint(uint64(len(data))), data...)
-	client.Write(data)
+	client.Conn.Write(data)
+	return
 }
 
 // Dial connect to a limitd server
@@ -33,6 +34,8 @@ func Dial(address string) (client *Client, err error) {
 
 	conn, err := net.Dial("tcp", address)
 
-	client = new(LimitdClient)
+	client = new(Client)
 	client.Conn = conn
+
+	return
 }

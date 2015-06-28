@@ -1,6 +1,7 @@
 package fixture
 
 import (
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -18,6 +19,8 @@ func createWorkingDir() (name string, err error) {
 	}
 
 	config := `
+log_level: debug
+
 buckets:
   ip:
     per_minute: 10
@@ -27,6 +30,12 @@ buckets:
 		panic(err)
 	}
 	return
+}
+
+func checkError(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
 
 //Start the test server
@@ -42,11 +51,19 @@ func Start() (cmd *exec.Cmd) {
 		"--db",
 		wdir+"/db")
 
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Start()
+	// Create stdout, stderr streams of type io.Reader
+	stdout, err := cmd.StdoutPipe()
+	checkError(err)
+	stderr, err := cmd.StderrPipe()
+	checkError(err)
 
-	time.Sleep(1000 * time.Millisecond)
+	// Start command
+	err = cmd.Start()
+	checkError(err)
+
+	// Non-blockingly echo command output to terminal
+	go io.Copy(os.Stdout, stdout)
+	go io.Copy(os.Stderr, stderr)
 
 	return
 }
